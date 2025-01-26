@@ -1,51 +1,29 @@
-const express = require('express');
-const http = require('http');
-const socketIo = require('socket.io');
+require("dotenv").config(); // Load environment variables
+
+const express = require("express");
+const mongoose = require("mongoose");
 
 const app = express();
-const server = http.createServer(app);
-const io = socketIo(server);
+app.use(express.json()); // Middleware to parse JSON requests
 
-app.use(express.static('public'))
+// Connect to MongoDB
+const dbUrl = process.env.DATABASE_URL;
+mongoose
+    .connect(dbUrl, { useNewUrlParser: true, useUnifiedTopology: true })
+    .then(() => console.log("Connected to MongoDB"))
+    .catch((err) => console.error("Failed to connect to MongoDB:", err));
 
-let board = Array(9).fill(null);
-let currentPlayer = 'X';
+// Use API_KEY
+const apiKey = process.env.API_KEY;
+console.log("API Key:", apiKey); // For debugging (avoid in production)
 
-io.on('connection', (socket) => {
-    console.log('A user connected');
-
-    socket.emit('gameState', {board, currentPlayer })
-
-    socket.on('makeMove', (index) => {
-        if (board[index] === null) {
-            board[index] = currentPlayer;
-            io.emit('moveMade', { index, player: currentPlayer });
-            currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
-        }
-    });
-
-    socket.on('disconnect', () => {
-        console.log('A user disconnected');
-    });
-
-    socket.on('sendMessage', (message) => {
-        io.emit('receiveMessage', message);
-    });
+// Add test route
+app.get("/", (req, res) => {
+    res.send("Server is running and connected to MongoDB!");
 });
 
-
-server.listen(3000, () => {
-    console.log('Server is running on port 3000');
+// Start server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
 });
-/*import React, { StrictMode } from "react";
-import { createRoot } from "react-dom/client";
-import "./styles.css";
-
-import App from "./App";
-
-const root = createRoot(document.getElementById("root"));
-root.render(
-  <StrictMode>
-    <App />
-  </StrictMode>
-);*/
